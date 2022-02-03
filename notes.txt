@@ -1,0 +1,54 @@
+fractal music - mostly sounds really bad
+repetition and scale
+recall a fractal is truly NOT the same at various iteration, but close, so music should vary. Not truly symmetric, either.
+
+mapping a set to music- how?
+
+what about using music to drive fractal? (slow on computer, but could render later)
+
+mapping other data to music?
+https://www.swpc.noaa.gov/phenomena/solar-radiation-storm
+GOES data
+solar wind
+
+what is data turned into? midi? raw audio? (could use fp32 to handle dynamic range)
+spectral coefficients for conversion to audio? (reverse FFT or for manipulating and summing sin wave >
+additive synthesis. 
+Most interesting to choose frequency of sine wave and apply data to amplitude and add up and normalize it all.
+Use UI to change base frequencies in use. Harmonic synthesis driven by external data.
+bound data first so you don't have crazy peaks in one range.
+A log function could be good for bounding inputs. log base 10 essential gives you the x in 10^x for value. compresses the range nicely. 
+
+proff of concept. generate audio file using sin formula. play back. does it work? now add in different frequencies. 
+
+
+running k-means on a set of syex patches. anything meaningful? if I do see clusters, then opens up chance of creating new sysex patches and trying to fit to the clusters. mathematically close.
+
+what pre-processing is needed? I think the binary just has to a be a csv. simple.
+
+also need a sysex validator (ranges).
+
+Is pure java faster than processing for fractals? worth finding out. 
+
+
+mapping function for unknown range of inputs requires something like Modulo math (other options?)
+
+input the value to a function that produces a bound output (then normalize as needed)
+roll your own (like fractal divergence to infinity) or use some fancy math
+
+linear normalization may be insufficient since values will cluster. How to spread out uniformly? Trig may be best.
+
+
+geometric functions (sin, tan, cos, etc) are bounded depending on some rules
+e^(1/x) is bound for x >= 1
+complex sin is bounded
+
+f(x) = 1/(x^2 + 1) is bounded for all x
+
+f(x) = 1/(x^2 - 1) is bound for [2, +inf] and [-2, -inf]
+
+
+
+
+
+https://en.wikipedia.org/wiki/Bounded_function
