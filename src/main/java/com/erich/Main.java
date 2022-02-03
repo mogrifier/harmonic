@@ -12,6 +12,7 @@ public class Main {
 
     double [] sinValues;
     static public final int MAXFREQ = 22050;
+    static public final int MINFREQ = 25;
 
     public static void main(String[] args) throws IOException{
 	// write your code here
@@ -21,35 +22,54 @@ public class Main {
         //this works- additive synthesis. using a weighted average will allow emphasizing harmonics.
         main.writeWave("chord.wav", sum);
 
-        main.audio1Second();
+        main.audio1Second(true);
 
     }
 
 
-    private void audio1Second() throws IOException {
+    private void audio1Second(boolean stereo) throws IOException {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         RtswParser rtsw = new RtswParser();
         double[][] raw = rtsw.readInputToArray("rtsw_plot_data_2022-01-31T18_00_00.txt");
         //need 9 freqs. test values here.
-        int[] baseFreq = new int[]{220, 196, 392, 440, 600, 660, 880, 900, 1320};
+        double[] baseFreq = new double[]{65.41, 110, 392, 440, 329.6, 659.3, 880, 1760, 1319};
         //frequency scaling factor per column. Affects amount of tuning variation
         double[] scale = new double[]{10, 20, 5, 30, 25, 17, 40, 110, 52};
         //now use raw data to generate 1 second audio buffers
 
-        for (int i = 0; i < raw.length; i++ ) {
+        //raw.length vs 200
+        for (int i = 0; i < 200; i++ ) {
             double[] row = raw[i];
             Object[] channels = new Object[row.length];
 
             for (int j = 0; j < row.length; j++) {
                 //testing 1 second wave creation
-                double freq = baseFreq[j] + (Math.sin(raw[i][j]) * scale[j] );
-                channels[j] = createSineWave(freq, 1);
+                double freq = MINFREQ + ((Math.sin(raw[i][j]) + 1)/2 * 1365); //scale[j] ); //removed base freq for fun and change scale
+
+                /*
+                Much, much more interesting just using raw frequencies (no base). Very sci-fi.May want a floor (25 or so)
+
+                Now, imagine FM happening.
+
+                 */
+
+
+                channels[j] = createSineWave(freq, 7);
                 //writeWave(j + "sine.wav", (byte[])channels[j]);
             }
+
+            byte avg[];
+            if (stereo) {
+                avg = averageStereoChannels(channels);
+            }
+            else {
+                avg = averageChannels(channels);
+            }
+
             //average all for 1 second of data
-            byte[] avg = averageChannels(channels);
+
             //append each byte array to overall data stream of audio bytes
             baos.write(avg);
         }
@@ -78,6 +98,45 @@ public class Main {
             //save back as lsb msb
             average[j] = (byte) ((avg % 256) - 128);
             average[j + 1] = (byte)((avg / 256) - 128);
+        }
+
+        return average;
+    }
+
+
+    private byte[] averageStereoChannels(Object[] channels) {
+        byte[] average = new byte[((byte[])channels[0]).length];
+        int runningLeft = 0;
+        int runningRight = 0;
+        byte[] temp;
+        for (int j = 0; j < average.length; j+=4) {
+            runningRight = 0;
+            runningLeft = 0;
+            for (int i = 0; i < 5; i++) {
+                // byte length of 1 second of audio for test
+                temp = (byte[])channels[i];
+                int chValue = sampleToInt(temp[j], temp[j + 1]);
+                runningRight += chValue;
+            }
+
+            int avgRight = runningRight / 5;
+
+            for (int i = 5; i < channels.length; i++) {
+                // byte length of 1 second of audio for test
+                temp = (byte[])channels[i];
+                int chValue = sampleToInt(temp[j], temp[j + 1]);
+                runningLeft += chValue;
+            }
+
+            int avgLeft = runningLeft / 4;
+
+
+            //save back as lsb msb
+            average[j] = (byte) ((avgRight % 256) - 128);
+            average[j + 1] = (byte)((avgRight / 256) - 128);
+
+            average[j + 2] = (byte) ((avgLeft % 256) - 128);
+            average[j + 3] = (byte)((avgLeft/ 256) - 128);
         }
 
         return average;
