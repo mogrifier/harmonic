@@ -46,7 +46,7 @@ public class Main {
 
             for (int j = 0; j < row.length; j++) {
                 //testing 1 second wave creation
-                double freq = MINFREQ + ((Math.sin(raw[i][j]) + 1)/2 * 1365); //scale[j] ); //removed base freq for fun and change scale
+                double freq = Math.round(MINFREQ + ((Math.sin(raw[i][j]) + 1)/2 * 1365)); //scale[j] ); //removed base freq for fun and change scale
 
                 /*
                 Much, much more interesting just using raw frequencies (no base). Very sci-fi.May want a floor (25 or so)
@@ -57,7 +57,8 @@ public class Main {
 
 
                 channels[j] = createSineWave(freq, 7);
-                //writeWave(j + "sine.wav", (byte[])channels[j]);
+                //RTSW data is causing creation of almost every whole number freq from 25 to 1390. Hmm.
+                //writeWave(freq + "_sine.wav", (byte[])channels[j]);
             }
 
             byte avg[];
