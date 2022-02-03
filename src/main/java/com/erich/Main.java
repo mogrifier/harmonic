@@ -2,23 +2,86 @@ package com.erich;
 
 import org.apache.commons.io.FileUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class Main {
 
     double [] sinValues;
     static public final int MAXFREQ = 22050;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException{
 	// write your code here
 
         Main main = new Main();
         byte[] sum = main.chord();
         //this works- additive synthesis. using a weighted average will allow emphasizing harmonics.
         main.writeWave("chord.wav", sum);
+
+        main.audio1Second();
+
     }
 
+
+    private void audio1Second() throws IOException {
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        RtswParser rtsw = new RtswParser();
+        double[][] raw = rtsw.readInputToArray("rtsw_plot_data_2022-01-31T18_00_00.txt");
+        //need 9 freqs. test values here.
+        int[] baseFreq = new int[]{220, 196, 392, 440, 600, 660, 880, 900, 1320};
+        //frequency scaling factor per column. Affects amount of tuning variation
+        double[] scale = new double[]{10, 20, 5, 30, 25, 17, 40, 110, 52};
+        //now use raw data to generate 1 second audio buffers
+
+        for (int i = 0; i < raw.length; i++ ) {
+            double[] row = raw[i];
+            Object[] channels = new Object[row.length];
+
+            for (int j = 0; j < row.length; j++) {
+                //testing 1 second wave creation
+                double freq = baseFreq[j] + (Math.sin(raw[i][j]) * scale[j] );
+                channels[j] = createSineWave(freq, 1);
+                //writeWave(j + "sine.wav", (byte[])channels[j]);
+            }
+            //average all for 1 second of data
+            byte[] avg = averageChannels(channels);
+            //append each byte array to overall data stream of audio bytes
+            baos.write(avg);
+        }
+
+        //save the resulting audio
+        writeWave("average.wav", baos.toByteArray());
+    }
+
+    /*
+    Averaging requires computing the 16bit value, averaging it, then writing back as LSB MSB
+     */
+    private byte[] averageChannels(Object[] channels) {
+        byte[] average = new byte[((byte[])channels[0]).length];
+        int running = 0;
+        byte[] temp;
+        for (int j = 0; j < average.length; j+=2) {
+            running = 0;
+            for (int i = 0; i < channels.length; i++) {
+                // byte length of 1 second of audio for test
+                temp = (byte[])channels[i];
+                int chValue = sampleToInt(temp[j], temp[j + 1]);
+                running += chValue;
+            }
+
+            int avg = running / channels.length;
+            //save back as lsb msb
+            average[j] = (byte) ((avg % 256) - 128);
+            average[j + 1] = (byte)((avg / 256) - 128);
+        }
+
+        return average;
+    }
 
     private int sampleToInt (byte lsb, byte msb) {
         return lsb + 128 + (msb + 128) * 256;
@@ -65,7 +128,8 @@ public class Main {
 
     }
 
-    private byte[] writeSineWave(String name, int freq, int seconds) {
+
+    private byte[] createSineWave(double freq, int seconds) {
         computeSine();
 
         // write samples to file
@@ -79,7 +143,7 @@ public class Main {
         while (sampleCount++ < samples.length/2) {
             //write to new array
             //convert freq value to give desired frequency for value given
-            pos = (index++ * freq/2) % sinValues.length;
+            pos = (int)(index++ * freq/2) % sinValues.length;
             //lsb
             samples[samplePos] = (byte)(((((sinValues[pos] + 1)/2) * 65535) % 256) - 128);
             //msb
@@ -88,8 +152,13 @@ public class Main {
             samplePos += 2;
         }
 
-        writeWave(name, samples);
+        return samples;
+    }
 
+
+    private byte[] writeSineWave(String name, double freq, int seconds) {
+        byte [] samples = createSineWave(freq, seconds);
+        writeWave(name, samples);
         return samples;
     }
 
