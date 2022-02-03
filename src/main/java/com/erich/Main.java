@@ -26,7 +26,12 @@ public class Main {
 
     }
 
-
+/*
+approach for generating and mixing will be to create files for every channels data.
+Then read in the files a buffer at a time, averaging them out. May provide simpler way to
+fade in and out. Will certainly be easier to produce final mix with vary odd swirling sounds
+due to randomize time length of the chunks of data at a given freq in a channel.
+ */
     private void audio1Second(boolean stereo) throws IOException {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -60,6 +65,13 @@ public class Main {
                 //RTSW data is causing creation of almost every whole number freq from 25 to 1390. Hmm.
                 //writeWave(freq + "_sine.wav", (byte[])channels[j]);
             }
+
+            /*
+            Tried to adjust volume using 3/log(freq). skews everything off center. Better choice
+            would be to apply a low pass filter to de-emphasize the high values. Not sure
+            how to adjust volume properly.
+
+             */
 
             byte avg[];
             if (stereo) {
