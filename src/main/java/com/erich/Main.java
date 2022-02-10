@@ -13,6 +13,7 @@ public class Main {
 
     private static final int DISSONANT = 0;
     private static final int HARMONIC = 1;
+    private static final int EVENHARMONIC = 2;
     double [] sinValues;
     static public final int MAXFREQ = 22050;
     static public final int MINFREQ = 54;
@@ -27,7 +28,7 @@ public class Main {
 
         //main.audio1Second(true);
 
-        main.audioChannelGenerator(4, HARMONIC);
+        main.audioChannelGenerator(9, EVENHARMONIC);
     }
 
 
@@ -45,7 +46,7 @@ public class Main {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
             //too much data- shorten amount used.
-            for (int i = 0; i < 500; i++ ) {
+            for (int i = 0; i < 100; i++ ) {
                 double[] row = raw[i];
                 double freq= 0;
                 //iterate through each channel
@@ -56,6 +57,10 @@ public class Main {
                     case HARMONIC:
                         freq = getHarmonicFreq(Math.sin(raw[i][j]));
                         break;
+                    case EVENHARMONIC:
+                        freq = getEvenHarmonicFreq(Math.sin(raw[i][j]));
+                        break;
+
                 }
                   // Math.round(MINFREQ + ((Math.sin(raw[i][j]) + 1)/2 * 1365)); //scale[j] ); //removed base freq for fun and change scale
 
@@ -90,6 +95,18 @@ public class Main {
     private double getHarmonicFreq(double sin) {
 
         return MINFREQ * Math.round((sin + 2) * 5);
+    }
+
+
+    /*
+    These have great potential but there is a high one that is a little off sounding. figure it out and remove it.
+     */
+    private double getEvenHarmonicFreq(double sin) {
+        double multiplier =  Math.abs(Math.round(sin * 12) * 2);
+        if (multiplier == 0) {
+            multiplier = 1;
+        }
+        return MINFREQ * multiplier;
     }
 
 
