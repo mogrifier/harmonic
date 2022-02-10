@@ -2,36 +2,110 @@ package com.erich;
 
 import org.apache.commons.io.FileUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import java.io.*;
 import java.util.ArrayList;
 
 public class Main {
 
+    private static final int DISSONANT = 0;
+    private static final int HARMONIC = 1;
     double [] sinValues;
     static public final int MAXFREQ = 22050;
-    static public final int MINFREQ = 25;
+    static public final int MINFREQ = 54;
 
     public static void main(String[] args) throws IOException{
 	// write your code here
 
         Main main = new Main();
-        byte[] sum = main.chord();
+        //byte[] sum = main.chord();
         //this works- additive synthesis. using a weighted average will allow emphasizing harmonics.
-        main.writeWave("chord.wav", sum);
+       // main.writeWave("chord.wav", sum);
 
-        main.audio1Second(true);
+        //main.audio1Second(true);
+
+        main.audioChannelGenerator(4, HARMONIC);
+    }
+
+
+    private void audioChannelGenerator(int channelCount, int type) throws IOException {
+
+        RtswParser rtsw = new RtswParser();
+        double[][] raw = rtsw.readInputToArray("rtsw_plot_data_2022-01-31T18_00_00.txt");
+        //need 9 freqs. test values here.
+        double[] baseFreq = new double[]{65.41, 110, 392, 440, 329.6, 659.3, 880, 1760, 1319};
+        //frequency scaling factor per column. Affects amount of tuning variation
+        double[] scale = new double[]{10, 20, 5, 30, 25, 17, 40, 110, 52};
+        //now use raw data to generate 1 second audio buffers
+        //raw.length vs 200
+        for (int j = 0; j < channelCount; j++) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            //too much data- shorten amount used.
+            for (int i = 0; i < 500; i++ ) {
+                double[] row = raw[i];
+                double freq= 0;
+                //iterate through each channel
+                switch (type) {
+                    case DISSONANT:
+                        freq = getDissonantFreq(Math.sin(raw[i][j]));
+                        break;
+                    case HARMONIC:
+                        freq = getHarmonicFreq(Math.sin(raw[i][j]));
+                        break;
+                }
+                  // Math.round(MINFREQ + ((Math.sin(raw[i][j]) + 1)/2 * 1365)); //scale[j] ); //removed base freq for fun and change scale
+
+                /*
+                Much, much more interesting just using raw frequencies (no base). Very sci-fi.May want a floor (25 or so)
+
+                Now, imagine FM happening.
+
+                 */
+
+                //need random length in seconds
+                int time = (int)(Math.random()*5 + 5);
+                //save to bytearray, growing each channel successively
+                //byte[] myStream = createSineWave(freq, time);
+                //System.out.println(myStream.length);
+                baos.write(createSineWave(freq, time));
+
+                //by the way, could use ANY type of soundwave form. Could have several and randomly choose.
+                //could also use algorithm to make system harmonically aware and generate freqs from a set that go well together.
+
+                //RTSW data is causing creation of almost every whole number freq from 25 to 1390. Hmm.
+                //writeWave(freq + "_sine.wav", (byte[])channels[j]);
+            }
+            //writing a channel's complete audio at a time since exceeding heap memory (even at 10GB)
+            writeWaveWithHeader(j + "channel.wav", baos.toByteArray());
+            System.out.println("wrote channel file " + j);
+
+        }
 
     }
 
-/*
-approach for generating and mixing will be to create files for every channels data.
-Then read in the files a buffer at a time, averaging them out. May provide simpler way to
-fade in and out. Will certainly be easier to produce final mix with vary odd swirling sounds
-due to randomize time length of the chunks of data at a given freq in a channel.
- */
+    private double getHarmonicFreq(double sin) {
+
+        return MINFREQ * Math.round((sin + 2) * 5);
+    }
+
+
+    private double getDissonantFreq(double sin) {
+
+        return Math.round(MINFREQ + ((sin + 1)/2 * 1365));
+    }
+
+    /*
+    approach for generating and mixing will be to create files for every channels data.
+    Then read in the files a buffer at a time, averaging them out. May provide simpler way to
+    fade in and out. Will certainly be easier to produce final mix with vary odd swirling sounds
+    due to randomize time length of the chunks of data at a given freq in a channel.
+
+    just drop the individual channels in a DAW and mix, fx, etc.
+     */
     private void audio1Second(boolean stereo) throws IOException {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -245,4 +319,19 @@ due to randomize time length of the chunks of data at a given freq in a channel.
     }
 
 
+    private void writeWaveWithHeader(String name, byte[] samples) throws IOException {
+        File out = new File(name);
+        //mono 16 bit audio, 44100Hz, LE format
+        final boolean bigEndian = false;
+        final boolean signed = true;
+        final int bits = 16;
+        final int channels = 1;
+        final int sampleRate = 44100;
+
+        AudioFormat format = new AudioFormat((float)sampleRate, bits, channels, signed, bigEndian);
+        ByteArrayInputStream bais = new ByteArrayInputStream(samples);
+        AudioInputStream audioInputStream = new AudioInputStream(bais, format, samples.length);
+        AudioSystem.write(audioInputStream, AudioFileFormat.Type.WAVE, out);
+        audioInputStream.close();
+    }
 }
