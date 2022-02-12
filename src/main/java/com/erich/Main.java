@@ -16,7 +16,8 @@ public class Main {
     private static final int EVENHARMONIC = 2;
     double [] sinValues;
     static public final int MAXFREQ = 22050;
-    static public final int MINFREQ = 54;
+    //110 is used so that I can easily use the prophet 12 with an alternate tuning and play along
+    static public final int MINFREQ = 110;
 
     public static void main(String[] args) throws IOException{
 	// write your code here
@@ -28,7 +29,7 @@ public class Main {
 
         //main.audio1Second(true);
 
-        main.audioChannelGenerator(9, EVENHARMONIC);
+        main.audioChannelGenerator(9, HARMONIC);
     }
 
 
@@ -94,7 +95,11 @@ public class Main {
 
     private double getHarmonicFreq(double sin) {
 
-        return MINFREQ * Math.round((sin + 2) * 5);
+        double multiplier =  Math.abs(Math.round(sin * 20));
+        if (multiplier == 0) {
+            multiplier = 1;
+        }
+        return MINFREQ * multiplier;
     }
 
 
