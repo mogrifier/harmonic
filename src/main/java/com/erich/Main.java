@@ -14,10 +14,15 @@ public class Main {
     private static final int DISSONANT = 0;
     private static final int HARMONIC = 1;
     private static final int EVENHARMONIC = 2;
+    private static final int A_SCALE = 3;
     double [] sinValues;
     static public final int MAXFREQ = 22050;
     //110 is used so that I can easily use the prophet 12 with an alternate tuning and play along
-    static public final int MINFREQ = 110;
+    static public final int MINFREQ = 55;
+
+    // notes in A. skipped some- 495 (B), 605,
+    double[] aScaleFreq = new double[]{55, 110, 165, 220, 275, 330, 385, 440, 550, 660, 770, 825, 880, 990,
+        1045, 1100, 1210, 1320, 1485, 1760 };
 
     public static void main(String[] args) throws IOException{
 	// write your code here
@@ -29,7 +34,7 @@ public class Main {
 
         //main.audio1Second(true);
 
-        main.audioChannelGenerator(9, HARMONIC);
+        main.audioChannelGenerator(6, A_SCALE);
     }
 
 
@@ -47,7 +52,7 @@ public class Main {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
             //too much data- shorten amount used.
-            for (int i = 0; i < 100; i++ ) {
+            for (int i = 0; i < 200; i++ ) {
                 double[] row = raw[i];
                 double freq= 0;
                 //iterate through each channel
@@ -61,6 +66,10 @@ public class Main {
                     case EVENHARMONIC:
                         freq = getEvenHarmonicFreq(Math.sin(raw[i][j]));
                         break;
+                    case A_SCALE:
+                        //just computing a random index for pulling associated value from fixed list of frequencies
+                        freq = getAScaleFreq();
+                        break;
 
                 }
                   // Math.round(MINFREQ + ((Math.sin(raw[i][j]) + 1)/2 * 1365)); //scale[j] ); //removed base freq for fun and change scale
@@ -73,7 +82,7 @@ public class Main {
                  */
 
                 //need random length in seconds
-                int time = (int)(Math.random()*5 + 5);
+                int time = (int)(Math.random()*8 + 9);
                 //save to bytearray, growing each channel successively
                 //byte[] myStream = createSineWave(freq, time);
                 //System.out.println(myStream.length);
@@ -93,12 +102,19 @@ public class Main {
 
     }
 
+    private double getAScaleFreq() {
+        double freq = aScaleFreq[(int)Math.floor(Math.random() * aScaleFreq.length)];
+        //System.out.print(freq + "   ");
+        return freq;
+    }
+
     private double getHarmonicFreq(double sin) {
 
         double multiplier =  Math.abs(Math.round(sin * 20));
         if (multiplier == 0) {
             multiplier = 1;
         }
+        //System.out.print(multiplier + "   ");
         return MINFREQ * multiplier;
     }
 
