@@ -2,6 +2,7 @@
 Creating a simple additive synthesizer for creating either single sounds (samples/wavetables) or ambient music driven by external data.
 ## Resource Websites 
 - https://www.swpc.noaa.gov/products/goes-proton-flux
+- https://data.nanograv.org/ - could be interesting data, too
 - many sites below are suspect or hard to use.
 - 
 - Stanford Solar Center: solar-center.stanford.edu/ 
